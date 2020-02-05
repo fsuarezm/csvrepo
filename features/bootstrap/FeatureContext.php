@@ -4,12 +4,19 @@ use Behat\Behat\Tester\Exception\PendingException;
 use Behat\Behat\Context\Context;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
+use TalkingBit\BddExample\UpdatePricesFromUploadedFile;
+
 
 /**
  * Defines application features from the specific context.
  */
 class FeatureContext implements Context
 {
+    /** @var string */
+    private $pathToFile;
+    /** @var UpdatePricesFromUploadedFile */
+    private $updatePricesFromUploadedFile;
+
     /**
      * Initializes context.
      *
@@ -19,6 +26,7 @@ class FeatureContext implements Context
      */
     public function __construct()
     {
+        $this->updatePricesFromUploadedFile = new UpdatePricesFromUploadedFile();
     }
 
     /**
@@ -42,7 +50,7 @@ class FeatureContext implements Context
      */
     public function iUploadTheFile()
     {
-        throw new PendingException();
+        $this->updatePricesFromUploadedFile->usingFile($this->pathToFile);
     }
 
     /**
