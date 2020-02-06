@@ -2,7 +2,37 @@
 
 namespace TalkingBit\BddExample;
 
-interface Product
+class Product
 {
-    public function setPrice($argument1);
+    /** @var int */
+    private $id;
+    /** @var string */
+    private $name;
+    /** @var float */
+    private $price;
+
+    public function __construct(int $id, string $name, float $price)
+    {
+        $this->id = $id;
+        $this->name = $name;
+        $this->price = $price;
+    }
+
+    public function setPrice(float $price): void
+    {
+        $this->price = $price;
+    }
+
+    /**
+     * @return float
+     */
+    public function price(): float
+    {
+        return $this->price;
+    }
+
+    public function id(): int
+    {
+        return $this->id;
+    }
 }

@@ -27,7 +27,7 @@ class UpdatePricesFromUploadedFile
         $data = $this->fileReader->readFrom($pathToFile);
         foreach ($data as $row) {
             $product = $this->productRepository->getById($row['product_id']);
-            $product->setPrice($row['new_price']);
+            $product->setPrice((float)$row['new_price']);
         }
     }
 }

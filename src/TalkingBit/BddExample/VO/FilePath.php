@@ -2,7 +2,18 @@
 
 namespace TalkingBit\BddExample\VO;
 
-interface FilePath
+class FilePath
 {
-    public function path(): string;
+    /** @var string */
+    private $path;
+
+    public function __construct(string $path)
+    {
+        $this->path = $path;
+    }
+
+    public function path(): string
+    {
+        return $this->path;
+    }
 }

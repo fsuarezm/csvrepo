@@ -1,11 +1,14 @@
 <?php
 
-use Behat\Behat\Tester\Exception\PendingException;
 use Behat\Behat\Context\Context;
-use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
+use Behat\Behat\Tester\Exception\PendingException;
+use PHPUnit\Framework\Assert;
+use TalkingBit\BddExample\Product;
 use TalkingBit\BddExample\UpdatePricesFromUploadedFile;
-
+use TalkingBit\BddExample\FileReader\CSVFileReader;
+use TalkingBit\BddExample\Persistence\InMemoryProductRepository;
+use TalkingBit\BddExample\VO\FilePath;
 
 /**
  * Defines application features from the specific context.
@@ -16,6 +19,10 @@ class FeatureContext implements Context
     private $pathToFile;
     /** @var UpdatePricesFromUploadedFile */
     private $updatePricesFromUploadedFile;
+    /**
+     * @var InMemoryProductRepository
+     */
+    private $productRepository;
 
     /**
      * Initializes context.
@@ -26,23 +33,45 @@ class FeatureContext implements Context
      */
     public function __construct()
     {
-        $this->updatePricesFromUploadedFile = new UpdatePricesFromUploadedFile();
+        $this->productRepository = new InMemoryProductRepository();
+        $this->updatePricesFromUploadedFile = new UpdatePricesFromUploadedFile(
+            $this->productRepository,
+            new CSVFileReader()
+        );
     }
 
     /**
      * @Given There are current prices in the system
      */
-    public function thereAreCurrentPricesInTheSystem()
+    public function thereAreCurrentPricesInTheSystem(TableNode $productTable)
     {
-        throw new PendingException();
+        foreach ($productTable as $productRow) {
+            $product = new Product(
+                $productRow['id'],
+                $productRow['name'],
+                $productRow['price']
+            );
+            $this->productRepository->store($product);
+        }
     }
 
     /**
-     * @Given I have a file named :arg1 with the new prices
+     * @Given I have a file named :pathToFile with the new prices
      */
-    public function iHaveAFileNamedWithTheNewPrices($arg1)
+    public function iHaveAFileNamedWithTheNewPrices(FilePath $pathToFile, TableNode $table)
     {
-        throw new PendingException();
+        $this->pathToFile = $pathToFile;
+        $file = fopen($this->pathToFile->path(), 'w');
+
+        $header = true;
+        foreach ($table as $row) {
+            if ($header) {
+                fputcsv($file, array_keys($row));
+                $header = false;
+            }
+            fputcsv($file, $row);
+        }
+        fclose($file);
     }
 
     /**
@@ -56,16 +85,20 @@ class FeatureContext implements Context
     /**
      * @Then Changes are applied to the current prices
      */
-    public function changesAreAppliedToTheCurrentPrices()
+    public function changesAreAppliedToTheCurrentPrices(TableNode $productTable)
     {
-        throw new PendingException();
+        foreach ($productTable as $productRow) {
+            $product = $this->productRepository->getById($productRow['id']);
+            Assert::assertEquals($productRow['price'], $product->price());
+        }
     }
 
     /**
-     * @Given I have a file named :arg1 with invalid data
+     * @Given I have a file named :pathToFile with invalid data
      */
-    public function iHaveAFileNamedWithInvalidData($arg1)
+    public function iHaveAFileNamedWithInvalidData($pathToFile )
     {
+        $this->pathToFile = $pathToFile;
         throw new PendingException();
     }
 
@@ -91,5 +124,13 @@ class FeatureContext implements Context
     public function thereIsAnErrorInTheSystem()
     {
         throw new PendingException();
+    }
+
+    /**
+     * @Transform :pathToFile
+     */
+    public function getFilePath(string $pathToFile): FilePath
+    {
+        return new FilePath('./'.$pathToFile);
     }
 }

@@ -46,7 +46,7 @@ class UpdatePricesFromUploadedFileSpec extends ObjectBehavior
             ->readFrom($filePath)
             ->willReturn(
                 [
-                    ['product_id' => 101, 'new_price' => 14.50]
+                    ['product_id' => '101', 'new_price' => 14.50]
                 ]
             );
         $product->setPrice(14.50)->shouldBeCalled();
