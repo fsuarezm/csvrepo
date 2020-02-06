@@ -57,6 +57,8 @@ class FeatureContext implements Context
             );
             $this->productRepository->store($product);
         }
+
+        $this->assertTheseProductsAreInTheRepository($productTable);
     }
 
     /**
@@ -66,6 +68,30 @@ class FeatureContext implements Context
     {
         $this->pathToFile = $pathToFile;
         $this->createCsvFileWithDataFromTable($this->pathToFile->path(), $table);
+
+        Assert::assertFileExists($pathToFile->path());
+    }
+
+    /**
+     * @Given I have a file named :pathToFile with invalid data
+     */
+    public function iHaveAFileNamedWithInvalidData(FilePath $pathToFile, TableNode $table)
+    {
+        $this->pathToFile = $pathToFile;
+        $this->createCsvFileWithDataFromTable($this->pathToFile->path(), $table);
+
+        Assert::assertFileExists($pathToFile->path());
+    }
+
+    /**
+     * @Given There is an error in the system
+     */
+    public function thereIsAnErrorInTheSystem()
+    {
+        $path = $this->pathToFile->path();
+        unlink($this->pathToFile->path());
+
+        Assert::assertFileNotExists($path);
     }
 
     /**
@@ -82,23 +108,6 @@ class FeatureContext implements Context
     }
 
     /**
-     * @Then Changes are applied to the current prices
-     */
-    public function changesAreAppliedToTheCurrentPrices(TableNode $productTable)
-    {
-        $this->checkProductPrice($productTable);
-    }
-
-    /**
-     * @Given I have a file named :pathToFile with invalid data
-     */
-    public function iHaveAFileNamedWithInvalidData(FilePath $pathToFile, TableNode $table)
-    {
-        $this->pathToFile = $pathToFile;
-        $this->createCsvFileWithDataFromTable($this->pathToFile->path(), $table);
-    }
-
-    /**
      * @Then A message is shown explaining the problem
      */
     public function aMessageIsShownExplainingTheProblem(PyStringNode $expectedMessage)
@@ -108,19 +117,11 @@ class FeatureContext implements Context
     }
 
     /**
-     * @Then Changes are not applied to the current prices
+     * @Then /Changes are (not )?applied to the current prices/
      */
-    public function changesAreNotAppliedToTheCurrentPrices(TableNode $productTable)
+    public function changesAreOrNotAppliedToTheCurrentPrices(TableNode $productTable)
     {
-        $this->checkProductPrice($productTable);
-    }
-
-    /**
-     * @When There is an error in the system
-     */
-    public function thereIsAnErrorInTheSystem()
-    {
-        unlink($this->pathToFile->path());
+        $this->assertTheseProductsAreInTheRepository($productTable);
     }
 
     /**
@@ -151,7 +152,7 @@ class FeatureContext implements Context
     /**
      * @param TableNode $productTable
      */
-    private function checkProductPrice(TableNode $productTable): void
+    private function assertTheseProductsAreInTheRepository(TableNode $productTable): void
     {
         foreach ($productTable as $productRow) {
             $product = $this->productRepository->getById($productRow['id']);
