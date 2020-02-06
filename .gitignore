@@ -2,3 +2,4 @@
 /vendor
 composer.lock
 prices_update.csv
+file_with.data

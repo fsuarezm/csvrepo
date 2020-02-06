@@ -3,7 +3,6 @@
 use Behat\Behat\Context\Context;
 use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
-use Behat\Behat\Tester\Exception\PendingException;
 use PHPUnit\Framework\Assert;
 use TalkingBit\BddExample\Product;
 use TalkingBit\BddExample\UpdatePricesFromUploadedFile;
@@ -121,7 +120,7 @@ class FeatureContext implements Context
      */
     public function thereIsAnErrorInTheSystem()
     {
-        throw new PendingException();
+        unlink($this->pathToFile->path());
     }
 
     /**
@@ -129,7 +128,9 @@ class FeatureContext implements Context
      */
     public function getFilePath(string $pathToFile): FilePath
     {
-        return new FilePath('./'.$pathToFile);
+        $fullPathToFile = './' . $pathToFile;
+        touch($fullPathToFile);
+        return new FilePath($fullPathToFile);
     }
 
     private function createCsvFileWithDataFromTable(string $path, TableNode $table)
