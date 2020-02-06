@@ -1,6 +1,7 @@
 <?php
 
 use Behat\Behat\Context\Context;
+use Behat\Gherkin\Node\PyStringNode;
 use Behat\Gherkin\Node\TableNode;
 use Behat\Behat\Tester\Exception\PendingException;
 use PHPUnit\Framework\Assert;
@@ -15,7 +16,7 @@ use TalkingBit\BddExample\VO\FilePath;
  */
 class FeatureContext implements Context
 {
-    /** @var string */
+    /** @var FilePath */
     private $pathToFile;
     /** @var UpdatePricesFromUploadedFile */
     private $updatePricesFromUploadedFile;
@@ -23,6 +24,10 @@ class FeatureContext implements Context
      * @var InMemoryProductRepository
      */
     private $productRepository;
+    /**
+     * @var Exception|Throwable
+     */
+    private $lastException;
 
     /**
      * Initializes context.
@@ -61,17 +66,7 @@ class FeatureContext implements Context
     public function iHaveAFileNamedWithTheNewPrices(FilePath $pathToFile, TableNode $table)
     {
         $this->pathToFile = $pathToFile;
-        $file = fopen($this->pathToFile->path(), 'w');
-
-        $header = true;
-        foreach ($table as $row) {
-            if ($header) {
-                fputcsv($file, array_keys($row));
-                $header = false;
-            }
-            fputcsv($file, $row);
-        }
-        fclose($file);
+        $this->createCsvFileWithDataFromTable($this->pathToFile->path(), $table);
     }
 
     /**
@@ -79,7 +74,12 @@ class FeatureContext implements Context
      */
     public function iUploadTheFile()
     {
-        $this->updatePricesFromUploadedFile->usingFile($this->pathToFile);
+        try {
+            $this->updatePricesFromUploadedFile->usingFile($this->pathToFile);
+        }
+        catch (Throwable $exception) {
+            $this->lastException = $exception;
+        }
     }
 
     /**
@@ -87,35 +87,33 @@ class FeatureContext implements Context
      */
     public function changesAreAppliedToTheCurrentPrices(TableNode $productTable)
     {
-        foreach ($productTable as $productRow) {
-            $product = $this->productRepository->getById($productRow['id']);
-            Assert::assertEquals($productRow['price'], $product->price());
-        }
+        $this->checkProductPrice($productTable);
     }
 
     /**
      * @Given I have a file named :pathToFile with invalid data
      */
-    public function iHaveAFileNamedWithInvalidData($pathToFile )
+    public function iHaveAFileNamedWithInvalidData(FilePath $pathToFile, TableNode $table)
     {
         $this->pathToFile = $pathToFile;
-        throw new PendingException();
+        $this->createCsvFileWithDataFromTable($this->pathToFile->path(), $table);
     }
 
     /**
      * @Then A message is shown explaining the problem
      */
-    public function aMessageIsShownExplainingTheProblem()
+    public function aMessageIsShownExplainingTheProblem(PyStringNode $expectedMessage)
     {
-        throw new PendingException();
+        $message = $this->lastException->getMessage();
+        Assert::assertEquals($expectedMessage->getRaw(), $message);
     }
 
     /**
      * @Then Changes are not applied to the current prices
      */
-    public function changesAreNotAppliedToTheCurrentPrices()
+    public function changesAreNotAppliedToTheCurrentPrices(TableNode $productTable)
     {
-        throw new PendingException();
+        $this->checkProductPrice($productTable);
     }
 
     /**
@@ -132,5 +130,31 @@ class FeatureContext implements Context
     public function getFilePath(string $pathToFile): FilePath
     {
         return new FilePath('./'.$pathToFile);
+    }
+
+    private function createCsvFileWithDataFromTable(string $path, TableNode $table)
+    {
+        $file = fopen($path, 'w');
+
+        $header = true;
+        foreach ($table as $row) {
+            if ($header) {
+                fputcsv($file, array_keys($row));
+                $header = false;
+            }
+            fputcsv($file, $row);
+        }
+        fclose($file);
+    }
+
+    /**
+     * @param TableNode $productTable
+     */
+    private function checkProductPrice(TableNode $productTable): void
+    {
+        foreach ($productTable as $productRow) {
+            $product = $this->productRepository->getById($productRow['id']);
+            Assert::assertEquals($productRow['price'], $product->price());
+        }
     }
 }

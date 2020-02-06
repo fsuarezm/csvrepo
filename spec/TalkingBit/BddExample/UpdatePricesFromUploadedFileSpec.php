@@ -55,4 +55,21 @@ class UpdatePricesFromUploadedFileSpec extends ObjectBehavior
 
         $this->usingFile($filePath);
     }
+
+    public function it_should_fail_if_file_has_not_the_right_structure(
+        FileReader $fileReader,
+        FilePath $filePath
+    )
+    {
+        $fileReader
+            ->readFrom($filePath)
+            ->willReturn(
+                [
+                    ['product_id' => 101, 'product_name' => 'Product 1']
+                ]
+            );
+
+        $this->shouldThrow(\UnexpectedValueException::class)->duringUsingFile($filePath);
+    }
+
 }

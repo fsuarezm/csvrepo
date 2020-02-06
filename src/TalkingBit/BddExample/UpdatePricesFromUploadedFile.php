@@ -26,8 +26,17 @@ class UpdatePricesFromUploadedFile
     {
         $data = $this->fileReader->readFrom($pathToFile);
         foreach ($data as $row) {
+            $this->checkIsAValidDataStructure($row);
+
             $product = $this->productRepository->getById($row['product_id']);
             $product->setPrice((float)$row['new_price']);
+        }
+    }
+
+    private function checkIsAValidDataStructure($row): void
+    {
+        if (! isset($row['product_id']) || ! isset($row['new_price'])) {
+            throw new \UnexpectedValueException('The file doesn\'t contain valid data to update prices');
         }
     }
 }
